@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:github="http://www.mulesoft.org/schema/mule/github" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/github http://www.mulesoft.org/schema/mule/github/current/mule-github.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <github:config name="GitHub" connectionUser="naveen.salimath@capgemini.com" connectionPassword="2sa07ec421@" doc:name="GitHub">
+        <github:connection-pooling-profile initialisationPolicy="INITIALISE_ONE" exhaustedAction="WHEN_EXHAUSTED_GROW"/>
+    </github:config>
+    <flow name="git_jenkis_sfdcFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/sfdc" doc:name="HTTP" allowedMethods="GET"/>
+        <sfdc:query config-ref="Salesforce__Basic_Authentication" query="dsql:SELECT City__c,Postal_Code__c,accountId__c,address__c,name__c,state__c FROM Account__c" doc:name="Salesforce"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="4c440806-faef-462a-a7d2-c57d006230b2">
+            <dw:input-payload doc:sample="sample_data\list_Account__c.dwl"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	accountId__c: payload.accountId__c,
+	name__c: payload.name__c,
+	address__c: payload.address__c,
+	state__c: payload.state__c,
+	Postal_Code__c: payload.Postal_Code__c,
+	City__c: payload.City__c
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <github:get-commit config-ref="GitHub" owner="nsalimat" repositoryName="gitHub" sha="NO" doc:name="GitHub"/>
+        <logger message="#[message.payload]" level="INFO" doc:name="Logger"/>
+        
+    </flow>
+</mule>
