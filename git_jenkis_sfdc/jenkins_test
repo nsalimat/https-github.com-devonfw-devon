@@ -1,0 +1,10 @@
+node{
+stage('SCM Checkout'){
+git 'https://github.com/nsalimat/POC'
+}
+stage('Complale-package'){
+
+sh 'mvn package'
+}
+
+}
